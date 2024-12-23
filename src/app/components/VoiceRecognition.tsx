@@ -5,9 +5,11 @@ import React, { useEffect, useState, useRef } from 'react';
 const VoiceRecognition: React.FC = () => {
   const [recognizing, setRecognizing] = useState(false);
   const [recognizedChunks, setRecognizedChunks] = useState<{ text: string, color: string }[]>([]);
-  const [interimText, setInterimText] = useState('');
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const textBoxRef = useRef<HTMLDivElement>(null);
+  const isRecognizing = useRef(false); // Track the recognizing state
+  const hasStopped = useRef(false); // Track if the recognition should stop
+  const retryIntervalRef = useRef<number | null>(null); // Ref to store the interval ID
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -15,17 +17,14 @@ const VoiceRecognition: React.FC = () => {
       const recognition = new SpeechRecognition();
       recognitionRef.current = recognition;
       recognition.lang = 'yue-Hant-HK';
-      recognition.interimResults = true;
-      recognition.continuous = true;
+      recognition.interimResults = false; // Disable interim results
+      recognition.continuous = false; // Disable continuous mode
 
       recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let interim = '';
         let final = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
             final += event.results[i][0].transcript;
-          } else {
-            interim += event.results[i][0].transcript;
           }
         }
 
@@ -38,29 +37,83 @@ const VoiceRecognition: React.FC = () => {
             }
           ]);
         }
-        
-        setInterimText(interim);
+      };
+
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+        console.error("Speech Recognition Error:", event.error);
+        setRecognizing(false);
+        isRecognizing.current = false;
+      };
+
+      recognition.onend = () => {
+        console.log("onend")
+        if (!hasStopped.current) {
+        console.log("set interval")
+
+          // Retry loop to start recognition again
+          retryIntervalRef.current = window.setInterval(() => {
+            if (!hasStopped.current) {
+              try {
+                recognition.start();
+              } catch (error) {
+                console.error("Failed to restart SpeechRecognition:", error);
+              }
+            }
+          }, 100); // Retry every 100ms
+        } else {
+          isRecognizing.current = false;
+        }
+      };
+
+      recognition.onstart = () => {
+        if (retryIntervalRef.current !== null) {
+          clearInterval(retryIntervalRef.current);
+          retryIntervalRef.current = null;
+        }
+        isRecognizing.current = true;
       };
     } else {
       alert('Your browser does not support Speech Recognition.');
     }
-  }, []);
+  }, [recognizing]);
 
   useEffect(() => {
     if (textBoxRef.current) {
       textBoxRef.current.scrollTop = textBoxRef.current.scrollHeight;
     }
-  }, [recognizedChunks, interimText]);
+  }, [recognizedChunks]);
 
   const handleStart = () => {
-    recognitionRef.current?.start();
-    setRecognizing(true);
+    try {
+      if (!isRecognizing.current) {
+        hasStopped.current = false;
+        recognitionRef.current?.start();
+        setRecognizing(true);
+        isRecognizing.current = true;
+      }
+    } catch (error) {
+      console.error("Failed to start SpeechRecognition:", error);
+    }
   };
 
   const handleStop = () => {
+    window.location.reload();
+    if (retryIntervalRef.current !== null) {
+      clearInterval(retryIntervalRef.current);
+      retryIntervalRef.current = null;
+    }
+
+    hasStopped.current = true;
+    if (!recognitionRef.current) {
+console.log("no ref to stop")
+    }
     recognitionRef.current?.stop();
     setRecognizing(false);
-    setInterimText('');
+    isRecognizing.current = false;
+  };
+
+  const handleClear = () => {
+    setRecognizedChunks([]);
   };
 
   return (
@@ -70,6 +123,11 @@ const VoiceRecognition: React.FC = () => {
         className="px-4 py-2 bg-blue-500 text-white rounded">
         {recognizing ? 'Stop Recognition' : 'Start Recognition'}
       </button>
+      <button 
+        onClick={handleClear}
+        className="px-4 py-2 bg-red-500 text-white rounded ml-2">
+        Clear Text
+      </button>
       <div 
         ref={textBoxRef}
         className="mt-4 p-4 border rounded h-64 overflow-y-scroll bg-gray-100 text-4xl"
@@ -78,7 +136,6 @@ const VoiceRecognition: React.FC = () => {
         {recognizedChunks.map((chunk, index) => (
           <span key={index} style={{ color: chunk.color, marginRight: '0.5em' }}>{chunk.text}</span>
         ))}
-        <span className="text-blue-500">{interimText}</span> {/* Highlighting interim text in blue */}
       </div>
     </div>
   );

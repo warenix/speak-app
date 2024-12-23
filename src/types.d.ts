@@ -22,6 +22,8 @@ declare global {
       }[];
       resultIndex: number;
     }
+// Define the SpeechRecognitionErrorEvent type
+  interface SpeechRecognitionErrorEvent extends Event { error: string; message: string;}
   }
   
   export {};
