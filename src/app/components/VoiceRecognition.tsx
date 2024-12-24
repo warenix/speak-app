@@ -5,6 +5,7 @@ import React, { useEffect, useState, useRef } from 'react';
 const VoiceRecognition: React.FC = () => {
   const [recognizing, setRecognizing] = useState(false);
   const [recognizedChunks, setRecognizedChunks] = useState<{ text: string, color: string }[]>([]);
+  const [stopping, setStopping] = useState(false); // Track the stopping state
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const textBoxRef = useRef<HTMLDivElement>(null);
   const isRecognizing = useRef(false); // Track the recognizing state
@@ -46,9 +47,9 @@ const VoiceRecognition: React.FC = () => {
       };
 
       recognition.onend = () => {
-        console.log("onend")
+        console.log("onend");
         if (!hasStopped.current) {
-        console.log("set interval")
+          console.log("set interval");
 
           // Retry loop to start recognition again
           retryIntervalRef.current = window.setInterval(() => {
@@ -62,6 +63,7 @@ const VoiceRecognition: React.FC = () => {
           }, 100); // Retry every 100ms
         } else {
           isRecognizing.current = false;
+          setStopping(false); // Update state to reflect that stopping has completed
         }
       };
 
@@ -97,40 +99,45 @@ const VoiceRecognition: React.FC = () => {
   };
 
   const handleStop = () => {
-    window.location.reload();
     if (retryIntervalRef.current !== null) {
       clearInterval(retryIntervalRef.current);
       retryIntervalRef.current = null;
     }
 
     hasStopped.current = true;
-    if (!recognitionRef.current) {
-console.log("no ref to stop")
-    }
+    setStopping(true); // Indicate that stopping process has started
     recognitionRef.current?.stop();
     setRecognizing(false);
     isRecognizing.current = false;
   };
 
-  const handleClear = () => {
-    setRecognizedChunks([]);
+  const handleReload = () => {
+    window.location.reload();
   };
 
   return (
-    <div>
-      <button 
-        onClick={recognizing ? handleStop : handleStart}
-        className="px-4 py-2 bg-blue-500 text-white rounded">
-        {recognizing ? 'Stop Recognition' : 'Start Recognition'}
-      </button>
-      <button 
-        onClick={handleClear}
-        className="px-4 py-2 bg-red-500 text-white rounded ml-2">
-        Clear Text
-      </button>
+    <div className="flex flex-col h-screen">
+      <div className="p-4">
+        <button 
+          onClick={recognizing ? handleStop : handleStart}
+          className={`px-4 py-2 ${stopping ? 'bg-gray-500' : 'bg-blue-500'} text-white rounded`}
+          disabled={stopping}>
+          {recognizing ? (stopping ? 'Stopping...' : 'Stop Recognition') : 'Start Recognition'}
+        </button>
+        <button 
+          onClick={handleReload}
+          className="px-4 py-2 bg-gray-500 text-white rounded ml-2">
+          Reload Page
+        </button>
+        {stopping && (
+          <div className="mt-2 p-2 bg-yellow-200 text-yellow-800 rounded">
+            Stopping...
+          </div>
+        )}
+      </div>
       <div 
         ref={textBoxRef}
-        className="mt-4 p-4 border rounded h-64 overflow-y-scroll bg-gray-100 text-4xl"
+        className="flex-grow p-4 border rounded overflow-y-scroll bg-gray-100 text-4xl"
         contentEditable={true}
         suppressContentEditableWarning={true}>
         {recognizedChunks.map((chunk, index) => (
