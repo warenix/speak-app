@@ -34,7 +34,7 @@ const VoiceRecognition: React.FC = () => {
             ...prev, 
             { 
               text: final, 
-              color: `#${Math.floor(Math.random() * 128).toString(16).padStart(2, '0')}${Math.floor(Math.random() * 128).toString(16).padStart(2, '0')}${Math.floor(Math.random() * 128).toString(16).padStart(2, '0')}`  // Darker color
+              color: `#${Math.floor(Math.random() * 128 + 128).toString(16).padStart(2, '0')}${Math.floor(Math.random() * 128 + 128).toString(16).padStart(2, '0')}${Math.floor(Math.random() * 128 + 128).toString(16).padStart(2, '0')}`  // Lighter color
             }
           ]);
         }
@@ -116,34 +116,34 @@ const VoiceRecognition: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen">
-      <div className="p-4">
-        <button 
-          onClick={recognizing ? handleStop : handleStart}
-          className={`px-4 py-2 ${stopping ? 'bg-gray-500' : 'bg-blue-500'} text-white rounded`}
-          disabled={stopping}>
-          {recognizing ? (stopping ? 'Stopping...' : 'Stop Recognition') : 'Start Recognition'}
-        </button>
-        <button 
-          onClick={handleReload}
-          className="px-4 py-2 bg-gray-500 text-white rounded ml-2">
-          Reload Page
-        </button>
-        {stopping && (
-          <div className="mt-2 p-2 bg-yellow-200 text-yellow-800 rounded">
-            Stopping...
-          </div>
-        )}
+    <div className="flex flex-col h-screen w-screen bg-gradient-to-r from-gray-900 via-purple-900 to-blue-900 text-white">
+      <div className="p-4 flex items-center justify-between">
+        <div className="flex space-x-4">
+          <button 
+            onClick={recognizing ? handleStop : handleStart}
+            className={`px-6 py-3 border-2 border-cyan-500 hover:border-cyan-300 transition duration-300 rounded-full ${stopping ? 'bg-gray-700' : 'bg-blue-500'}`}
+            disabled={stopping}>
+            {recognizing ? (stopping ? 'Stopping...' : 'Stop Recognition') : 'Start Recognition'}
+          </button>
+          <button 
+            onClick={handleReload}
+            className="px-6 py-3 border-2 border-cyan-500 hover:border-cyan-300 transition duration-300 rounded-full bg-gray-700">
+            Reload Page
+          </button>
+        </div>
       </div>
       <div 
         ref={textBoxRef}
-        className="flex-grow p-4 border rounded overflow-y-scroll bg-gray-100 text-4xl"
-        contentEditable={true}
-        suppressContentEditableWarning={true}>
+        className="flex-grow p-6 border border-cyan-500 rounded-lg overflow-y-scroll bg-gray-800 text-2xl leading-relaxed">
         {recognizedChunks.map((chunk, index) => (
           <span key={index} style={{ color: chunk.color, marginRight: '0.5em' }}>{chunk.text}</span>
         ))}
       </div>
+      {stopping && (
+        <div className="p-2 bg-yellow-200 text-yellow-800 rounded text-center mt-2">
+          Stopping...
+        </div>
+      )}
     </div>
   );
 };

@@ -2,7 +2,7 @@ import VoiceRecognition from './components/VoiceRecognition';
 
 const Home: React.FC = () => {
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-0">
       <main>
         <VoiceRecognition />
       </main>
