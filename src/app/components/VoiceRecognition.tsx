@@ -1,5 +1,6 @@
 "use client"; // Add this directive at the top
 
+import Link from 'next/link';
 import React, { useEffect, useState, useRef } from 'react';
 
 const VoiceRecognition: React.FC = () => {
@@ -11,13 +12,21 @@ const VoiceRecognition: React.FC = () => {
   const isRecognizing = useRef(false); // Track the recognizing state
   const hasStopped = useRef(false); // Track if the recognition should stop
   const retryIntervalRef = useRef<number | null>(null); // Ref to store the interval ID
+  const [language, setLanguage] = useState('yue-Hant-HK'); // State for language setting
+
+  useEffect(() => {
+    const savedLang = localStorage.getItem('language');
+    if (savedLang) {
+      setLanguage(savedLang);
+    }
+  }, []);
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
       recognitionRef.current = recognition;
-      recognition.lang = 'yue-Hant-HK';
+      recognition.lang = language;
       recognition.interimResults = false; // Disable interim results
       recognition.continuous = false; // Disable continuous mode
 
@@ -77,7 +86,7 @@ const VoiceRecognition: React.FC = () => {
     } else {
       alert('Your browser does not support Speech Recognition.');
     }
-  }, [recognizing]);
+  }, [recognizing, language]);
 
   useEffect(() => {
     if (textBoxRef.current) {
@@ -121,20 +130,23 @@ const VoiceRecognition: React.FC = () => {
         <div className="flex space-x-4">
           <button 
             onClick={recognizing ? handleStop : handleStart}
-            className={`px-6 py-3 border-2 border-cyan-500 hover:border-cyan-300 transition duration-300 rounded-full ${stopping ? 'bg-gray-700' : 'bg-blue-500'}`}
+            className={`text-sm px-6 py-3 border-2 border-cyan-500 hover:border-cyan-300 transition duration-300 rounded-full ${stopping ? 'bg-gray-700' : 'bg-blue-500'}`}
             disabled={stopping}>
             {recognizing ? (stopping ? 'Stopping...' : 'Stop Recognition') : 'Start Recognition'}
           </button>
           <button 
             onClick={handleReload}
-            className="px-6 py-3 border-2 border-cyan-500 hover:border-cyan-300 transition duration-300 rounded-full bg-gray-700">
+            className="text-sm px-6 py-3 border-2 border-cyan-500 hover:border-cyan-300 transition duration-300 rounded-full bg-gray-700">
             Reload Page
           </button>
+          <Link href="/settings" className="text-sm px-6 py-3 border-2 border-cyan-500 hover:border-cyan-300 transition duration-300 rounded-full bg-gray-700">
+            Settings
+          </Link>
         </div>
       </div>
       <div 
         ref={textBoxRef}
-        className="flex-grow p-6 border border-cyan-500 rounded-lg overflow-y-scroll bg-gray-800 text-2xl leading-relaxed">
+        className="flex-grow p-6 border border-cyan-500 rounded-lg overflow-y-scroll bg-gray-800 text-4xl leading-relaxed">
         {recognizedChunks.map((chunk, index) => (
           <span key={index} style={{ color: chunk.color, marginRight: '0.5em' }}>{chunk.text}</span>
         ))}
